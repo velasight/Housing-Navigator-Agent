@@ -56,4 +56,3 @@ This project involved navigating several real-world technical challenges.
     * **Solution:** The only path forward was to **contact Google Cloud Support**. After purchasing a plan and adding the necessary support roles, the issue was explained to the support team, who were able to resolve the backend permissions state.
 
 ---
-*(You can optionally upload the Azure Addendum as a separate file, like `AZURE_GUIDE.md`, in your repository and link to it from here if you wish.)*
