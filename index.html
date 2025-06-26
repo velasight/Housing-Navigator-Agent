@@ -22,6 +22,19 @@
     h1 {
       color: #1a73e8;
     }
+    /* Simple style for our new button */
+    #audio-button {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin-top: 20px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    #audio-button.active {
+        background-color: #e6f4ea;
+        border-color: #34a853;
+    }
   </style>
 </head>
 <body>
@@ -29,6 +42,7 @@
   <div class="container">
     <h1>Housing Navigator Agent</h1>
     <p>Please click the chat icon in the bottom right corner to begin.</p>
+    <button id="audio-button">Enable Audio Responses</button>
   </div>
 
   <link rel="stylesheet" href="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css">
@@ -46,51 +60,56 @@
     df-messenger {
       z-index: 999;
       position: fixed;
-      --df-messenger-font-color: #000;
-      --df-messenger-font-family: Google Sans;
-      --df-messenger-chat-background: #f3f6fc;
-      --df-messenger-message-user-background: #d3e3fd;
-      --df-messenger-message-bot-background: #fff;
+      /* ... other styles ... */
       bottom: 16px;
       right: 16px;
     }
   </style>
-<script>
-      // Wait for the Dialogflow Messenger component to be ready
-      window.addEventListener('df-messenger-loaded', function (event) {
-        const dfMessenger = document.querySelector('df-messenger');
-        // The shadow DOM contains the chat elements
-        const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
-        // This is the specific part of the chat window where messages appear
-        const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
+  <script>
+    const audioButton = document.getElementById('audio-button');
+    let isAudioEnabled = false;
 
-        // We'll use a MutationObserver to "watch" for new messages being added
-        const observer = new MutationObserver((mutationsList, observer) => {
-          for (const mutation of mutationsList) {
-            // We only care about new nodes (messages) being added
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-              mutation.addedNodes.forEach(node => {
-                // Check if the new message has the "bot-message" class
-                if (node.classList && node.classList.contains('bot-message')) {
-                  // Find the text within the message bubble
-                  const messageText = node.querySelector('.message-text').textContent;
-                  if (messageText) {
-                    // Create a speech "utterance" with the agent's text
-                    const utterance = new SpeechSynthesisUtterance(messageText);
-                    // Have the browser's speech system speak it out loud
-                    window.speechSynthesis.speak(utterance);
-                  }
+    // This function "unlocks" audio in the browser
+    function enableAudio() {
+        if (isAudioEnabled) return;
+        // A common trick is to play a silent sound on the first click
+        const silentUtterance = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(silentUtterance);
+        
+        isAudioEnabled = true;
+        audioButton.textContent = "Audio Enabled";
+        audioButton.classList.add('active');
+        console.log("Audio responses enabled by user.");
+    }
+    
+    audioButton.addEventListener('click', enableAudio);
+
+    window.addEventListener('df-messenger-loaded', function (event) {
+      const dfMessenger = document.querySelector('df-messenger');
+      const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
+      const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
+
+      const observer = new MutationObserver((mutationsList) => {
+        // Don't do anything if audio hasn't been enabled by the user
+        if (!isAudioEnabled) return; 
+
+        for (const mutation of mutationsList) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            mutation.addedNodes.forEach(node => {
+              if (node.classList && node.classList.contains('bot-message')) {
+                const messageText = node.querySelector('.message-text')?.textContent;
+                if (messageText) {
+                  const utterance = new SpeechSynthesisUtterance(messageText);
+                  window.speechSynthesis.speak(utterance);
                 }
-              });
-            }
+              }
+            });
           }
-        });
-
-        // Tell the observer to start watching the message list for changes
-        observer.observe(messageList, { childList: true, subtree: true });
+        }
       });
-    </script>
-    </body>
-</html>
+
+      observer.observe(messageList, { childList: true, subtree: true });
+    });
+  </script>
   </body>
 </html>
