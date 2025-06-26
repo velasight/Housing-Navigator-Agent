@@ -3,39 +3,12 @@
 <head>
   <title>Housing Navigator Agent</title>
   <style>
-    html, body {
-      font-family: Arial, sans-serif;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      background-color: #f0f4f9;
-    }
-    .container {
-      text-align: center;
-      padding: 40px;
-    }
-    h1 {
-      color: #1a73e8;
-    }
-    #audio-button {
-        padding: 10px 20px;
-        font-size: 16px;
-        margin-top: 20px;
-        cursor: pointer;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        background-color: #fff;
-    }
-    #audio-button.active {
-        background-color: #e6f4ea;
-        border-color: #34a853;
-        color: #185f2a;
-    }
+    /* ... (Your other styles remain the same) ... */
+    html, body { font-family: Arial, sans-serif; width: 100%; height: 100%; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; flex-direction: column; background-color: #f0f4f9; }
+    .container { text-align: center; padding: 40px; }
+    h1 { color: #1a73e8; }
+    #audio-button { padding: 10px 20px; font-size: 16px; margin-top: 20px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background-color: #fff; }
+    #audio-button.active { background-color: #e6f4ea; border-color: #34a853; color: #185f2a; }
   </style>
 </head>
 <body>
@@ -43,7 +16,7 @@
   <div class="container">
     <h1>Housing Navigator Agent</h1>
     <p>Please click the chat icon in the bottom right corner to begin.</p>
-    <button id="audio-button">Enable Audio Responses</button>
+    <button id="audio-button">Enable Audio</button>
   </div>
 
   <link rel="stylesheet" href="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css">
@@ -58,17 +31,9 @@
     </df-messenger-chat-bubble>
   </df-messenger>
   <style>
-    df-messenger {
-      z-index: 999;
-      position: fixed;
-      --df-messenger-font-color: #000;
-      --df-messenger-font-family: Google Sans;
-      --df-messenger-chat-background: #f3f6fc;
-      --df-messenger-message-user-background: #d3e3fd;
-      --df-messenger-message-bot-background: #fff;
-      bottom: 16px;
-      right: 16px;
-    }
+    df-messenger { z-index: 999; position: fixed; bottom: 16px; right: 16px; /* ... other styles ... */ }
+    /* Style for our new "Read Aloud" button */
+    .read-aloud-button { cursor: pointer; font-size: 18px; margin-left: 10px; user-select: none; }
   </style>
   <script>
     const audioButton = document.getElementById('audio-button');
@@ -82,52 +47,45 @@
         isAudioEnabled = true;
         audioButton.textContent = "Audio Enabled";
         audioButton.classList.add('active');
-        console.log("Audio has been enabled by user click.");
     }
     
     audioButton.addEventListener('click', enableAudio);
 
     window.addEventListener('df-messenger-loaded', function (event) {
-      console.log("df-messenger-loaded event fired.");
       const dfMessenger = document.querySelector('df-messenger');
-      
-      // Check if the messenger element and its shadowRoot exist
-      if (!dfMessenger || !dfMessenger.shadowRoot) {
-          console.error("Could not find df-messenger shadowRoot.");
-          return;
-      }
       const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
-      if (!chat || !chat.shadowRoot) {
-          console.error("Could not find df-messenger-chat shadowRoot.");
-          return;
-      }
       const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
-      if (!messageList) {
-          console.error("Could not find the message list wrapper to observe.");
-          return;
-      }
-      
-      console.log("Successfully found message list. Starting MutationObserver.");
-      
-      const observer = new MutationObserver((mutationsList) => {
-        if (!isAudioEnabled) return; 
 
+      const observer = new MutationObserver((mutationsList) => {
         for (const mutation of mutationsList) {
           if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
             mutation.addedNodes.forEach(node => {
-              // Ensure we are looking at an element, not a text node
               if (node.nodeType !== Node.ELEMENT_NODE) return;
               
-              // Find the bot message bubble inside the added node
               const botMessage = node.querySelector('.bot-message');
               if (botMessage) {
-                const messageText = botMessage.querySelector('.message-text')?.textContent;
-                console.log("Detected bot message with text:", messageText);
-                if (messageText) {
-                  // Cancel any previously queued speech to prevent overlap
-                  window.speechSynthesis.cancel();
-                  const utterance = new SpeechSynthesisUtterance(messageText);
-                  window.speechSynthesis.speak(utterance);
+                const messageTextElement = botMessage.querySelector('.message-text');
+                if (messageTextElement) {
+                    // Create the "Read Aloud" button (a speaker emoji)
+                    const speakButton = document.createElement('span');
+                    speakButton.textContent = '🔊';
+                    speakButton.className = 'read-aloud-button';
+                    speakButton.title = 'Read this message aloud';
+                    
+                    // Add the click event listener to speak the text
+                    speakButton.addEventListener('click', () => {
+                        if (!isAudioEnabled) {
+                            alert('Please click "Enable Audio" first.');
+                            return;
+                        }
+                        const textToSpeak = messageTextElement.textContent;
+                        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        window.speechSynthesis.cancel(); // Stop any previous speech
+                        window.speechSynthesis.speak(utterance);
+                    });
+                    
+                    // Add the button next to the message text
+                    messageTextElement.parentNode.appendChild(speakButton);
                 }
               }
             });
