@@ -31,6 +31,7 @@
     <p>Please click the chat icon in the bottom right corner to begin.</p>
   </div>
 
+  <link rel="stylesheet" href="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css">
   <script src="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/df-messenger.js"></script>
   <df-messenger
     project-id="velasight-housing-agent"
@@ -54,5 +55,36 @@
       right: 16px;
     }
   </style>
+  <script>
+    // Wait for the Dialogflow Messenger component to be ready
+    window.addEventListener('df-messenger-loaded', function (event) {
+      const dfMessenger = document.querySelector('df-messenger');
+      // The shadow DOM contains the chat elements
+      const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
+      const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
+
+      // Use a MutationObserver to watch for new messages being added
+      const observer = new MutationObserver((mutationsList, observer) => {
+        for (const mutation of mutationsList) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            mutation.addedNodes.forEach(node => {
+              // Check if the new message is from the bot
+              if (node.classList && node.classList.contains('bot-message')) {
+                const messageText = node.querySelector('.message-text').textContent;
+                if (messageText) {
+                  // Create a speech utterance and have the browser speak it
+                  const utterance = new SpeechSynthesisUtterance(messageText);
+                  window.speechSynthesis.speak(utterance);
+                }
+              }
+            });
+          }
+        }
+      });
+
+      // Start observing the message list for changes
+      observer.observe(messageList, { childList: true, subtree: true });
+    });
+  </script>
   </body>
 </html>
