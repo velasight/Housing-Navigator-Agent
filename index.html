@@ -71,16 +71,15 @@
 
     // This function "unlocks" audio in the browser
     function enableAudio() {
-        if (isAudioEnabled) return;
-        // A common trick is to play a silent sound on the first click
-        const silentUtterance = new SpeechSynthesisUtterance("");
-        window.speechSynthesis.speak(silentUtterance);
-        
-        isAudioEnabled = true;
-        audioButton.textContent = "Audio Enabled";
-        audioButton.classList.add('active');
-        console.log("Audio responses enabled by user.");
-    }
+        // Play a short, AUDIBLE confirmation on the first click to guarantee activation
+    const welcomeUtterance = new SpeechSynthesisUtterance("Audio enabled.");
+    window.speechSynthesis.speak(welcomeUtterance);
+
+    isAudioEnabled = true;
+    audioButton.textContent = "Audio Enabled";
+    audioButton.classList.add('active');
+    console.log("Audio responses enabled by user.");
+}
     
     audioButton.addEventListener('click', enableAudio);
 
