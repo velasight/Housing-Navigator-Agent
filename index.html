@@ -22,7 +22,6 @@
     h1 {
       color: #1a73e8;
     }
-    /* Simple style for our new button */
     #audio-button {
         padding: 10px 20px;
         font-size: 16px;
@@ -30,10 +29,12 @@
         cursor: pointer;
         border: 1px solid #ccc;
         border-radius: 5px;
+        background-color: #fff;
     }
     #audio-button.active {
         background-color: #e6f4ea;
         border-color: #34a853;
+        color: #185f2a;
     }
   </style>
 </head>
@@ -60,7 +61,11 @@
     df-messenger {
       z-index: 999;
       position: fixed;
-      /* ... other styles ... */
+      --df-messenger-font-color: #000;
+      --df-messenger-font-family: Google Sans;
+      --df-messenger-chat-background: #f3f6fc;
+      --df-messenger-message-user-background: #d3e3fd;
+      --df-messenger-message-bot-background: #fff;
       bottom: 16px;
       right: 16px;
     }
@@ -69,35 +74,58 @@
     const audioButton = document.getElementById('audio-button');
     let isAudioEnabled = false;
 
-    // This function "unlocks" audio in the browser
     function enableAudio() {
-        // Play a short, AUDIBLE confirmation on the first click to guarantee activation
-    const welcomeUtterance = new SpeechSynthesisUtterance("Audio enabled.");
-    window.speechSynthesis.speak(welcomeUtterance);
-
-    isAudioEnabled = true;
-    audioButton.textContent = "Audio Enabled";
-    audioButton.classList.add('active');
-    console.log("Audio responses enabled by user.");
-}
+        if (isAudioEnabled) return;
+        const welcomeUtterance = new SpeechSynthesisUtterance("Audio enabled.");
+        window.speechSynthesis.speak(welcomeUtterance);
+        
+        isAudioEnabled = true;
+        audioButton.textContent = "Audio Enabled";
+        audioButton.classList.add('active');
+        console.log("Audio has been enabled by user click.");
+    }
     
     audioButton.addEventListener('click', enableAudio);
 
     window.addEventListener('df-messenger-loaded', function (event) {
+      console.log("df-messenger-loaded event fired.");
       const dfMessenger = document.querySelector('df-messenger');
+      
+      // Check if the messenger element and its shadowRoot exist
+      if (!dfMessenger || !dfMessenger.shadowRoot) {
+          console.error("Could not find df-messenger shadowRoot.");
+          return;
+      }
       const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
+      if (!chat || !chat.shadowRoot) {
+          console.error("Could not find df-messenger-chat shadowRoot.");
+          return;
+      }
       const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
-
+      if (!messageList) {
+          console.error("Could not find the message list wrapper to observe.");
+          return;
+      }
+      
+      console.log("Successfully found message list. Starting MutationObserver.");
+      
       const observer = new MutationObserver((mutationsList) => {
-        // Don't do anything if audio hasn't been enabled by the user
         if (!isAudioEnabled) return; 
 
         for (const mutation of mutationsList) {
           if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
             mutation.addedNodes.forEach(node => {
-              if (node.classList && node.classList.contains('bot-message')) {
-                const messageText = node.querySelector('.message-text')?.textContent;
+              // Ensure we are looking at an element, not a text node
+              if (node.nodeType !== Node.ELEMENT_NODE) return;
+              
+              // Find the bot message bubble inside the added node
+              const botMessage = node.querySelector('.bot-message');
+              if (botMessage) {
+                const messageText = botMessage.querySelector('.message-text')?.textContent;
+                console.log("Detected bot message with text:", messageText);
                 if (messageText) {
+                  // Cancel any previously queued speech to prevent overlap
+                  window.speechSynthesis.cancel();
                   const utterance = new SpeechSynthesisUtterance(messageText);
                   window.speechSynthesis.speak(utterance);
                 }
@@ -107,7 +135,7 @@
         }
       });
 
-      observer.observe(messageList, { childList: true, subtree: true });
+      observer.observe(messageList, { childList: true });
     });
   </script>
   </body>
