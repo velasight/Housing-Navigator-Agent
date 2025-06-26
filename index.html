@@ -55,36 +55,42 @@
       right: 16px;
     }
   </style>
-  <script>
-    // Wait for the Dialogflow Messenger component to be ready
-    window.addEventListener('df-messenger-loaded', function (event) {
-      const dfMessenger = document.querySelector('df-messenger');
-      // The shadow DOM contains the chat elements
-      const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
-      const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
+<script>
+      // Wait for the Dialogflow Messenger component to be ready
+      window.addEventListener('df-messenger-loaded', function (event) {
+        const dfMessenger = document.querySelector('df-messenger');
+        // The shadow DOM contains the chat elements
+        const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
+        // This is the specific part of the chat window where messages appear
+        const messageList = chat.shadowRoot.querySelector('.message-list-wrapper');
 
-      // Use a MutationObserver to watch for new messages being added
-      const observer = new MutationObserver((mutationsList, observer) => {
-        for (const mutation of mutationsList) {
-          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-            mutation.addedNodes.forEach(node => {
-              // Check if the new message is from the bot
-              if (node.classList && node.classList.contains('bot-message')) {
-                const messageText = node.querySelector('.message-text').textContent;
-                if (messageText) {
-                  // Create a speech utterance and have the browser speak it
-                  const utterance = new SpeechSynthesisUtterance(messageText);
-                  window.speechSynthesis.speak(utterance);
+        // We'll use a MutationObserver to "watch" for new messages being added
+        const observer = new MutationObserver((mutationsList, observer) => {
+          for (const mutation of mutationsList) {
+            // We only care about new nodes (messages) being added
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+              mutation.addedNodes.forEach(node => {
+                // Check if the new message has the "bot-message" class
+                if (node.classList && node.classList.contains('bot-message')) {
+                  // Find the text within the message bubble
+                  const messageText = node.querySelector('.message-text').textContent;
+                  if (messageText) {
+                    // Create a speech "utterance" with the agent's text
+                    const utterance = new SpeechSynthesisUtterance(messageText);
+                    // Have the browser's speech system speak it out loud
+                    window.speechSynthesis.speak(utterance);
+                  }
                 }
-              }
-            });
+              });
+            }
           }
-        }
-      });
+        });
 
-      // Start observing the message list for changes
-      observer.observe(messageList, { childList: true, subtree: true });
-    });
-  </script>
+        // Tell the observer to start watching the message list for changes
+        observer.observe(messageList, { childList: true, subtree: true });
+      });
+    </script>
+    </body>
+</html>
   </body>
 </html>
